@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:convert';
 
 void main() {
   runApp(MyApp());
@@ -44,6 +47,32 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   final TextEditingController _typeAheadController = TextEditingController();
+  static List<UserDetail> _det = [];
+
+  Future<List<UserDetail>> _getUsers() async {
+    String url = 'https://jsonplaceholder.typicode.com/photos';
+    var data = await http.get(url);
+    var jsonData = json.decode(data.body);
+    List<UserDetail> users = [];
+    for (var u in jsonData) {
+      UserDetail user = UserDetail(
+          id: u['id'], title: u['title'], url: u['thumbnailUrl']);
+      users.add(user);
+    }
+    print(users.length);
+    _det = users;
+    return users;
+  }
+
+  static List<UserDetail> getSuggestions(String query) {
+    List<UserDetail> matches = [];
+    matches.addAll(_det);
+    matches.retainWhere((UserDetail s) => s.title.toLowerCase().contains(query.toLowerCase()));
+    return matches;
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -62,30 +91,77 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListTile(
-            title: TypeAheadField(
-                textFieldConfiguration: TextFieldConfiguration(
-                  decoration: InputDecoration(labelText: 'State'),
-                  controller: this._typeAheadController,
+        child: FutureBuilder(
+          future: _getUsers() ,
+          builder:(BuildContext context,
+              AsyncSnapshot snapshot) {
+            if (snapshot.data == null) {
+              return Center(
+                child: Text("No Data"),
+              );
+            } else {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ListTile(
+                  title: TypeAheadField(
+                      textFieldConfiguration: TextFieldConfiguration(
+                        decoration: InputDecoration(labelText: 'State'),
+                        controller: this._typeAheadController,
+                      ),
+                      suggestionsCallback: (pattern) async {
+                        return await getSuggestions(pattern);
+                      },
+                      transitionBuilder: (context, suggestionsBox, controller) {
+                        return suggestionsBox;
+                      },
+                      itemBuilder: (context, UserDetail suggestion) {
+                        return Padding(padding: EdgeInsets.all(10.0),
+                          child: Card(
+
+                            elevation: 10,
+                            child: Row(
+                              children: <Widget>[
+                                Padding(padding: EdgeInsets.fromLTRB(
+                                    3, 5, 10, 2),
+
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius
+                                          .circular(30.0),
+                                      child: Image(image: NetworkImage(
+                                          suggestion.url, scale: 3),),
+                                    )
+//
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Text(
+                                      suggestion.title, style: TextStyle(
+                                        color: Colors.black,
+                                        fontFamily: 'BenchNine',
+                                        fontSize: 15),),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      50.0, 10, 10, 10),
+                                  child: Text(suggestion.id.toString(),
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontFamily: 'BenchNine',
+                                          fontSize: 15)),
+                                )
+                              ],
+                            ),
+                          ),);
+                      },
+                      onSuggestionSelected: (suggestion) {
+                        this._typeAheadController.text = suggestion;
+                      }),
                 ),
-                suggestionsCallback: (pattern) async {
-                  return await StateService.getSuggestions(pattern);
-                },
-                transitionBuilder: (context, suggestionsBox, controller) {
-                  return suggestionsBox;
-                },
-                itemBuilder: (context, suggestion) {
-                  return ListTile(
-                    title: Text(suggestion),
-                  );
-                },
-                onSuggestionSelected: (suggestion) {
-                  this._typeAheadController.text = suggestion;
-                }),
-          ),
-        ),
+              );
+            }
+          }),
       ),
     );
   }
@@ -106,3 +182,13 @@ class StateService {
     return matches;
   }
 }
+
+class UserDetail {
+  final int id;
+  final String title;
+  final String url;
+
+  UserDetail({this.id, this.title, this.url});
+}
+
+
