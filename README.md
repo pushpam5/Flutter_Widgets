@@ -1,4 +1,4 @@
-# typeaheadapp
+# TypeAhead-Flutter
 
 A new Flutter application.
 
