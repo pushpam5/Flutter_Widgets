@@ -20,3 +20,6 @@ https://jsonplaceholder.typicode.com/
 
 There is much more you can do with this.<br>
 <b>Have Fun!!!!</b>
+
+For More Explanation read Article:<br>
+https://medium.com/@pushpamsaxena18bcs/typeahead-in-flutter-fee14d00faf9
