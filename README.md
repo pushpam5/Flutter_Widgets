@@ -1,6 +1,6 @@
 # TypeAhead-Flutter
 
-A new Flutter application.
+A New Flutter Package.
 
 ## Getting Started
 
